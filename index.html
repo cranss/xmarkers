@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X Markers — Organizador</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #16181c;
+      --border: #2f3336;
+      --text: #e7e9ea;
+      --muted: #71767b;
+      --accent: #1d9bf0;
+      --accent-hover: #1a8cd8;
+      --tag: #ffd400;
+      --radius: 12px;
+      --select: rgba(29, 155, 240, 0.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15, 20, 25, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.25rem; }
+    .subtitle { color: var(--muted); font-size: 0.875rem; }
+    main { max-width: 920px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .panel h2 { margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+    input[type="search"], input[type="text"], input[type="url"], input[type="date"], select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.9rem;
+    }
+    input[type="date"] { border-radius: 8px; }
+    input[type="search"], input[type="url"] { flex: 1; min-width: 180px; }
+    input[type="url"] { border-radius: 8px; width: 100%; }
+    button, .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent-hover); }
+    button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    button.secondary:hover { background: var(--border); }
+    button.danger { background: #f4212e; }
+    button:disabled { opacity: 0.45; cursor: default; }
+    .stats { display: flex; gap: 1rem; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
+    .stats strong { color: var(--text); }
+    .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .bulk-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.65rem 0.75rem;
+      background: rgba(29, 155, 240, 0.08);
+      border: 1px solid rgba(29, 155, 240, 0.35);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: rgba(29, 155, 240, 0.15);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+      font-size: 0.75rem;
+      margin: 0.15rem 0.15rem 0 0;
+    }
+    .tag-chip.user { background: rgba(255, 212, 0, 0.15); color: var(--tag); }
+    .tag-chip button {
+      background: none;
+      border: none;
+      color: inherit;
+      padding: 0;
+      font-size: 0.85rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .source-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      margin-left: 0.25rem;
+    }
+    .date-inferred { color: var(--muted); font-size: 0.75rem; font-style: italic; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .card:hover { border-color: #536471; }
+    .card.selected { border-color: var(--accent); background: rgba(29, 155, 240, 0.06); }
+    .card-header { display: flex; gap: 0.75rem; align-items: flex-start; }
+    .card-select {
+      margin-top: 0.65rem;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+    .meta { flex: 1; min-width: 0; }
+    .author-line { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: baseline; }
+    .author-line a { color: inherit; text-decoration: none; font-weight: 700; }
+    .author-line a:hover { text-decoration: underline; }
+    .handle, .date-link { color: var(--muted); font-size: 0.875rem; text-decoration: none; }
+    .date-link:hover { text-decoration: underline; }
+    .verified { color: var(--accent); font-size: 0.75rem; }
+    .tweet-text { margin: 0.6rem 0; white-space: pre-wrap; word-break: break-word; }
+    .media-wrap {
+      margin-top: 0.65rem;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+    }
+    .media-photo {
+      display: block;
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      background: #000;
+    }
+    .media-gallery {
+      display: grid;
+      gap: 2px;
+      background: var(--border);
+    }
+    .media-gallery:has(a:nth-child(2)) { grid-template-columns: 1fr 1fr; }
+    .media-gallery .media-photo { max-height: 260px; }
+    .media-video {
+      display: block;
+      width: 100%;
+      max-height: 420px;
+      background: #000;
+    }
+    .media-embed {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: none;
+      background: #000;
+    }
+    .media-play-link {
+      position: relative;
+      display: block;
+      line-height: 0;
+    }
+    .media-play-btn {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      transition: background 0.15s;
+    }
+    .media-play-link:hover .media-play-btn { background: rgba(0, 0, 0, 0.5); }
+    .engagement {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+    .card-actions input[type="text"] { flex: 1; min-width: 140px; border-radius: 8px; }
+    .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+    .hidden { display: none !important; }
+    .drop-hint {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .drop-hint.dragover { border-color: var(--accent); color: var(--accent); }
+    .hint { color: var(--muted); font-size: 0.8rem; margin-top: 0.5rem; line-height: 1.4; }
+    .link-row { display: flex; gap: 0.5rem; width: 100%; margin-top: 0.5rem; }
+    .link-row input { flex: 1; }
+    .save-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.65rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+    }
+    .save-status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--muted);
+      flex: 1;
+      min-width: 160px;
+    }
+    .save-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .save-dot.saved { background: #00ba7c; }
+    .save-dot.saving { background: var(--accent); animation: pulse 0.8s infinite; }
+    .save-dot.error { background: #f4212e; }
+    .save-dot.local { background: #ffd400; }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+    .save-filename { color: var(--text); font-weight: 600; }
+    @media (max-width: 600px) {
+      .card-actions, .link-row { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>X Markers</h1>
+    <p class="subtitle">Organiza marcadores de X, enlaces, videos y más.</p>
+  </header>
+
+  <main>
+    <div id="importPanel" class="panel">
+      <h2>Importar</h2>
+      <div id="dropZone" class="drop-hint">
+        Arrastra un archivo .html o .json aquí, o pega el código fuente abajo
+      </div>
+      <textarea id="htmlInput" placeholder="Pega aquí el HTML copiado de Ver código fuente en x.com/i/bookmarks/..."></textarea>
+      <div class="row">
+        <button id="parseBtn">Procesar HTML</button>
+        <label class="btn secondary" style="cursor:pointer">
+          Cargar .html
+          <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden>
+        </label>
+        <label class="btn secondary" style="cursor:pointer">
+          Cargar .json
+          <input type="file" id="jsonInput" accept=".json,application/json" hidden>
+        </label>
+        <button id="exportJsonBtn" class="secondary hidden">Exportar JSON</button>
+        <button id="clearBtn" class="secondary danger hidden">Limpiar todo</button>
+      </div>
+      <div class="link-row">
+        <input type="url" id="linkInput" placeholder="https://x.com/... / YouTube / TikTok / Instagram / cualquier web">
+        <button id="fetchLinkBtn">Añadir enlace</button>
+      </div>
+      <div class="save-panel">
+        <div class="save-status" id="saveStatus">
+          <span class="save-dot" id="saveDot"></span>
+          <span id="saveText">Sin datos guardados</span>
+        </div>
+        <button id="connectFileBtn" class="secondary" type="button">Vincular JSON</button>
+        <button id="newFileBtn" class="secondary" type="button">Crear JSON</button>
+        <button id="disconnectFileBtn" class="secondary hidden" type="button">Desvincular</button>
+      </div>
+      <p class="hint">Auto-guardado: cada cambio se escribe en tu archivo JSON (si está vinculado) y en caché del navegador. Funciona en Chrome/Edge.</p>
+    </div>
+
+    <div id="toolbar" class="panel hidden">
+      <h2>Filtros y orden</h2>
+      <div class="filters">
+        <input type="search" id="searchInput" placeholder="Buscar en texto, autor, hashtags…">
+        <input type="date" id="dateFilter" title="Ver solo posts de esta fecha">
+        <button id="clearDateFilter" class="secondary" type="button" hidden title="Quitar filtro de fecha">✕</button>
+        <select id="sortSelect">
+          <option value="date-desc">Fecha ↓ (reciente)</option>
+          <option value="date-asc">Fecha ↑ (antiguo)</option>
+          <option value="likes-desc">Me gusta ↓</option>
+          <option value="views-desc">Vistas ↓</option>
+          <option value="author-asc">Autor A–Z</option>
+          <option value="custom">Orden manual</option>
+        </select>
+        <select id="tagFilter">
+          <option value="">Todas las etiquetas</option>
+        </select>
+        <select id="mediaFilter">
+          <option value="">Todo tipo de media</option>
+          <option value="video">Solo video</option>
+          <option value="photo">Solo foto</option>
+          <option value="text">Solo texto</option>
+        </select>
+        <select id="sourceFilter">
+          <option value="">Todas las fuentes</option>
+          <option value="x">X / Twitter</option>
+          <option value="youtube">YouTube</option>
+          <option value="tiktok">TikTok</option>
+          <option value="instagram">Instagram</option>
+          <option value="web">Web</option>
+        </select>
+      </div>
+      <div id="bulkBar" class="bulk-bar hidden">
+        <span id="bulkCount">0 seleccionados</span>
+        <button id="selectAllBtn" class="secondary" type="button">Seleccionar visibles</button>
+        <button id="deselectAllBtn" class="secondary" type="button">Deseleccionar</button>
+        <button id="deleteSelectedBtn" class="danger" type="button">Eliminar seleccionados</button>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <div id="list"></div>
+    <div id="emptyState" class="empty">
+      Aún no hay marcadores. Importa HTML, JSON o añade un enlace manualmente.
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "xmarkers-user-data-v1";
+    const STATE_KEY = "xmarkers-state-v2";
+    const IDB_NAME = "xmarkers-files";
+    const IDB_STORE = "handles";
+    const IDB_KEY = "data-file";
+    const SAVE_DEBOUNCE_MS = 600;
+
+    /* ── HTML parser (X bookmarks) ── */
+    function parseEngagement(ariaLabel) {
+      if (!ariaLabel) return {};
+      const out = {};
+      const patterns = [
+        [/(\d[\d.,]*)\s+respuestas?/i, "replies"],
+        [/(\d[\d.,]*)\s+reposts?/i, "reposts"],
+        [/(\d[\d.,]*)\s+Me gusta/i, "likes"],
+        [/(\d[\d.,]*)\s+elementos guardados/i, "bookmarks"],
+        [/(\d[\d.,]*)\s+reproducciones/i, "views"],
+      ];
+      for (const [re, key] of patterns) {
+        const m = ariaLabel.match(re);
+        if (m) out[key] = parseInt(m[1].replace(/[.,]/g, ""), 10);
+      }
+      return out;
+    }
+
+    function textFromTweet(article) {
+      const node = article.querySelector('[data-testid="tweetText"]');
+      if (!node) return "";
+      let text = "";
+      const walk = (el) => {
+        for (const child of el.childNodes) {
+          if (child.nodeType === Node.TEXT_NODE) text += child.textContent;
+          else if (child.nodeName === "IMG" && child.alt) text += child.alt;
+          else if (child.nodeType === Node.ELEMENT_NODE) walk(child);
+        }
+      };
+      walk(node);
+      return text.replace(/\s+/g, " ").trim();
+    }
+
+    function hashtagsFromTweet(article) {
+      const tags = [];
+      article.querySelectorAll('[data-testid="tweetText"] a[href*="/hashtag/"]').forEach((a) => {
+        const m = a.getAttribute("href")?.match(/\/hashtag\/([^?]+)/);
+        if (m) tags.push(decodeURIComponent(m[1]));
+      });
+      return tags;
+    }
+
+    function mediaFromTweet(article) {
+      const media = { type: null, urls: [], videoUrl: null };
+      if (article.querySelector('[data-testid="videoPlayer"], [data-testid="videoComponent"]')) media.type = "video";
+      else if (article.querySelector('[data-testid="tweetPhoto"]')) media.type = "photo";
+      else if (article.querySelector('[data-testid="card.wrapper"]')) media.type = "link";
+
+      const videoEl = article.querySelector("video");
+      if (videoEl) {
+        const src = videoEl.getAttribute("src") || videoEl.querySelector("source[src]")?.getAttribute("src");
+        if (src && !src.startsWith("blob:")) media.videoUrl = src;
+        const poster = videoEl.getAttribute("poster");
+        if (poster && !media.urls.includes(poster)) media.urls.push(poster);
+      }
+
+      article.querySelectorAll("img[src]").forEach((img) => {
+        const src = img.src;
+        if (src.includes("profile_images") || src.includes("emoji")) return;
+        if (src.startsWith("https://") && !media.urls.includes(src)) media.urls.push(src);
+      });
+      return media;
+    }
+
+    function parseTweet(article) {
+      const status = article.querySelector('a[href*="/status/"]');
+      if (!status) return null;
+      const m = status.getAttribute("href")?.match(/\/([^/]+)\/status\/(\d+)/);
+      if (!m) return null;
+      const [, username, tweetId] = m;
+      const timeEl = article.querySelector("time[datetime]");
+      let displayName = "";
+      let handle = "";
+      const nameBlock = article.querySelector('[data-testid="User-Name"]');
+      if (nameBlock) {
+        const texts = [...nameBlock.querySelectorAll("span.css-1jxf684")]
+          .map((s) => s.textContent.replace(/\s+/g, " ").trim())
+          .filter(Boolean);
+        for (const t of texts) {
+          if (t.startsWith("@")) handle = t;
+          else if (!displayName && t !== "·") displayName = t;
+        }
+      }
+      if (!handle) handle = `@${username}`;
+      const avatarEl = article.querySelector('[data-testid="Tweet-User-Avatar"] img[src*="profile_images"]');
+      const engagementEl = article.querySelector('[role="group"][aria-label*="Me gusta"], [role="group"][aria-label*="respuestas"]');
+      return {
+        id: tweetId,
+        url: `https://x.com/${username}/status/${tweetId}`,
+        source: "x",
+        username,
+        handle,
+        displayName,
+        avatar: avatarEl?.src || "",
+        verified: !!article.querySelector('[data-testid="icon-verified"]'),
+        date: timeEl?.getAttribute("datetime") || null,
+        dateDisplay: timeEl?.textContent?.trim() || null,
+        dateInferred: false,
+        text: textFromTweet(article),
+        hashtags: hashtagsFromTweet(article),
+        engagement: parseEngagement(engagementEl?.getAttribute("aria-label")),
+        liked: !!article.querySelector('[data-testid="unlike"]'),
+        media: mediaFromTweet(article),
+        tags: [],
+        notes: "",
+        sortOrder: null,
+      };
+    }
+
+    function parseHtml(html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      let folder = "";
+      const timeline = doc.querySelector('[aria-label^="Cronología:"]');
+      if (timeline) folder = timeline.getAttribute("aria-label").replace("Cronología:", "").trim();
+      const tweets = [];
+      const seen = new Set();
+      doc.querySelectorAll('article[data-testid="tweet"]').forEach((article) => {
+        const tweet = parseTweet(article);
+        if (tweet && !seen.has(tweet.id)) { seen.add(tweet.id); tweets.push(tweet); }
+      });
+      return { folder, parsedAt: new Date().toISOString(), count: tweets.length, bookmarks: tweets };
+    }
+
+    /* ── Link fetcher ── */
+    function hashStr(s) {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      return Math.abs(h).toString(36);
+    }
+
+    function normalizeUrl(raw) {
+      let u = raw.trim();
+      if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+      return new URL(u).href;
+    }
+
+    function detectPlatform(url) {
+      const h = new URL(url).hostname.replace(/^www\./, "");
+      if (h === "x.com" || h === "twitter.com" || h === "mobile.twitter.com") return "x";
+      if (h.includes("youtube.com") || h === "youtu.be") return "youtube";
+      if (h.includes("tiktok.com")) return "tiktok";
+      if (h.includes("instagram.com")) return "instagram";
+      return "web";
+    }
+
+    function localDateIso(d = new Date()) {
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+
+    function parseMetaDate(raw) {
+      if (!raw) return null;
+      const d = new Date(raw);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+
+    async function fetchJson(url) {
+      try {
+        const r = await fetch(url);
+        if (r.ok) return r.json();
+      } catch { /* cors */ }
+      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const r = await fetch(proxy);
+      const data = await r.json();
+      return JSON.parse(data.contents);
+    }
+
+    async function fetchHtml(url) {
+      try {
+        const r = await fetch(url, { mode: "cors" });
+        if (r.ok) return r.text();
+      } catch { /* cors */ }
+      return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`).then((r) => r.text());
+    }
+
+    function metaFromDoc(doc, url) {
+      const q = (sel) => doc.querySelector(sel)?.getAttribute("content")?.trim() || "";
+      const title = q('meta[property="og:title"]') || q('meta[name="twitter:title"]') || doc.querySelector("title")?.textContent?.trim() || "";
+      const description = q('meta[property="og:description"]') || q('meta[name="description"]') || q('meta[name="twitter:description"]') || "";
+      const image = q('meta[property="og:image"]') || q('meta[name="twitter:image"]') || "";
+      const siteName = q('meta[property="og:site_name"]') || new URL(url).hostname.replace(/^www\./, "");
+      const dateRaw = q('meta[property="article:published_time"]')
+        || q('meta[property="og:updated_time"]')
+        || q('meta[name="date"]')
+        || q('meta[name="pubdate"]')
+        || q('meta[itemprop="datePublished"]')
+        || q('time[datetime]');
+      let jsonDate = null;
+      doc.querySelectorAll('script[type="application/ld+json"]').forEach((s) => {
+        try {
+          const j = JSON.parse(s.textContent);
+          const items = Array.isArray(j) ? j : [j];
+          for (const item of items) {
+            const d = item.datePublished || item.uploadDate || item.dateCreated;
+            if (d && !jsonDate) jsonDate = d;
+          }
+        } catch { /* ignore */ }
+      });
+      const date = parseMetaDate(dateRaw) || parseMetaDate(jsonDate);
+      const host = new URL(url).hostname.replace(/^www\./, "");
+      return { title, description, image, siteName, date, host };
+    }
+
+    function baseBookmark({ id, url, source, displayName, username, handle, text, date, dateInferred, avatar, media, hashtags = [] }) {
+      return {
+        id, url, source,
+        username: username || displayName || "link",
+        handle: handle || `@${(username || displayName || "link").toLowerCase().replace(/\s+/g, "")}`,
+        displayName: displayName || username || new URL(url).hostname,
+        avatar: avatar || "",
+        verified: false,
+        date: date || localDateIso(),
+        dateDisplay: null,
+        dateInferred: dateInferred ?? !date,
+        text,
+        hashtags,
+        engagement: {},
+        liked: false,
+        media: media || { type: null, urls: [] },
+        tags: [],
+        notes: "",
+        sortOrder: null,
+      };
+    }
+
+    function stripHtml(html) {
+      const d = document.createElement("div");
+      d.innerHTML = html;
+      return d.textContent.replace(/\s+/g, " ").trim();
+    }
+
+    async function fetchXPost(url) {
+      const idM = url.match(/status\/(\d+)/);
+      const tweetId = idM?.[1] || `link-${hashStr(url)}`;
+      try {
+        const oembed = await fetchJson(`https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`);
+        const authorMatch = oembed.author_url?.match(/(?:twitter|x)\.com\/([^/?]+)/);
+        const username = authorMatch?.[1] || "unknown";
+        const text = stripHtml(oembed.html || "") || oembed.author_name || url;
+        return baseBookmark({
+          id: tweetId,
+          url,
+          source: "x",
+          displayName: oembed.author_name || username,
+          username,
+          handle: `@${username}`,
+          text,
+          date: null,
+          dateInferred: true,
+          media: { type: "link", urls: [] },
+        });
+      } catch {
+        const meta = metaFromDoc(new DOMParser().parseFromString(await fetchHtml(url), "text/html"), url);
+        return baseBookmark({
+          id: tweetId,
+          url,
+          source: "x",
+          displayName: meta.siteName,
+          username: tweetId,
+          text: meta.title || meta.description || url,
+          date: meta.date,
+          dateInferred: !meta.date,
+          avatar: "",
+          media: meta.image ? { type: "photo", urls: [meta.image] } : { type: "link", urls: [] },
+        });
+      }
+    }
+
+    async function fetchYouTube(url) {
+      const u = new URL(url);
+      let videoId = u.searchParams.get("v");
+      if (!videoId && u.hostname.includes("youtu.be")) videoId = u.pathname.slice(1);
+      videoId = videoId || `link-${hashStr(url)}`;
+      let title = "", author = "", thumb = "";
+      try {
+        const o = await fetchJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+        title = o.title || "";
+        author = o.author_name || "";
+        thumb = o.thumbnail_url || "";
+      } catch { /* fallback meta */ }
+      let date = null;
+      try {
+        const html = await fetchHtml(url);
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const meta = metaFromDoc(doc, url);
+        if (!title) title = meta.title;
+        date = meta.date;
+        if (!thumb && meta.image) thumb = meta.image;
+      } catch { /* ignore */ }
+      return baseBookmark({
+        id: `yt-${videoId}`,
+        url,
+        source: "youtube",
+        displayName: author || "YouTube",
+        username: author || "youtube",
+        text: title || url,
+        date,
+        dateInferred: !date,
+        media: thumb ? { type: "video", urls: [thumb] } : { type: "video", urls: [] },
+      });
+    }
+
+    async function fetchTikTok(url) {
+      try {
+        const o = await fetchJson(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+        const id = `tt-${hashStr(url)}`;
+        return baseBookmark({
+          id,
+          url,
+          source: "tiktok",
+          displayName: o.author_name || "TikTok",
+          username: o.author_name || "tiktok",
+          text: o.title || url,
+          date: null,
+          dateInferred: true,
+          media: o.thumbnail_url ? { type: "video", urls: [o.thumbnail_url] } : { type: "video", urls: [] },
+        });
+      } catch {
+        return fetchGeneric(url, "tiktok");
+      }
+    }
+
+    async function fetchInstagram(url) {
+      try {
+        const o = await fetchJson(`https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`);
+        return baseBookmark({
+          id: `ig-${hashStr(url)}`,
+          url,
+          source: "instagram",
+          displayName: o.author_name || "Instagram",
+          username: o.author_name || "instagram",
+          text: o.title || url,
+          date: null,
+          dateInferred: true,
+          media: o.thumbnail_url ? { type: "photo", urls: [o.thumbnail_url] } : { type: "photo", urls: [] },
+        });
+      } catch {
+        return fetchGeneric(url, "instagram");
+      }
+    }
+
+    async function fetchGeneric(url, source = "web") {
+      const html = await fetchHtml(url);
+      const meta = metaFromDoc(new DOMParser().parseFromString(html, "text/html"), url);
+      const text = [meta.title, meta.description].filter(Boolean).join("\n\n") || url;
+      return baseBookmark({
+        id: `link-${hashStr(url)}`,
+        url,
+        source,
+        displayName: meta.siteName,
+        username: meta.host,
+        handle: `@${meta.host}`,
+        text,
+        date: meta.date,
+        dateInferred: !meta.date,
+        media: meta.image ? { type: "photo", urls: [meta.image] } : { type: "link", urls: [] },
+      });
+    }
+
+    async function fetchLinkMetadata(rawUrl) {
+      const url = normalizeUrl(rawUrl);
+      const platform = detectPlatform(url);
+      const fetchers = { x: fetchXPost, youtube: fetchYouTube, tiktok: fetchTikTok, instagram: fetchInstagram, web: fetchGeneric };
+      return fetchers[platform](url);
+    }
+
+    /* ── State ── */
+    let state = { folder: "", parsedAt: null, bookmarks: [] };
+    let userData = loadUserData();
+    let selectedIds = new Set();
+    let tagFocusId = null;
+    let fileHandle = null;
+    let saveTimer = null;
+    let autoSaveEnabled = true;
+
+    function supportsFileSystem() {
+      return "showSaveFilePicker" in window && "showOpenFilePicker" in window;
+    }
+
+    function openIdb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function storeFileHandle(handle) {
+      const db = await openIdb();
+      await new Promise((res, rej) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(handle, IDB_KEY);
+        tx.oncomplete = res;
+        tx.onerror = () => rej(tx.error);
+      });
+    }
+
+    async function loadStoredFileHandle() {
+      try {
+        const db = await openIdb();
+        return await new Promise((res, rej) => {
+          const tx = db.transaction(IDB_STORE, "readonly");
+          const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+          req.onsuccess = () => res(req.result || null);
+          req.onerror = () => rej(req.error);
+        });
+      } catch {
+        return null;
+      }
+    }
+
+    async function clearStoredFileHandle() {
+      try {
+        const db = await openIdb();
+        await new Promise((res, rej) => {
+          const tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).delete(IDB_KEY);
+          tx.oncomplete = res;
+          tx.onerror = () => rej(tx.error);
+        });
+      } catch { /* ignore */ }
+    }
+
+    function buildPayload() {
+      return {
+        version: 2,
+        folder: state.folder,
+        parsedAt: state.parsedAt,
+        savedAt: new Date().toISOString(),
+        bookmarks: state.bookmarks,
+        userDataIncluded: true,
+      };
+    }
+
+    function applyPayload(data) {
+      if (!data) return;
+      userData = {};
+      state.folder = data.folder || "";
+      state.parsedAt = data.parsedAt || null;
+      state.bookmarks = mergeUserData(data.bookmarks || []);
+      saveUserData();
+    }
+
+    async function writeFile(handle, payload) {
+      const w = await handle.createWritable();
+      await w.write(JSON.stringify(payload, null, 2));
+      await w.close();
+    }
+
+    async function readFile(handle) {
+      const file = await handle.getFile();
+      return JSON.parse(await file.text());
+    }
+
+    function formatSaveTime(iso) {
+      if (!iso) return "";
+      const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+      if (s < 5) return "ahora";
+      if (s < 60) return `hace ${s}s`;
+      return `hace ${Math.round(s / 60)}m`;
+    }
+
+    function updateSaveIndicator(mode, extra = "") {
+      const dot = document.getElementById("saveDot");
+      const text = document.getElementById("saveText");
+      dot.className = "save-dot";
+      const name = fileHandle?.name ? `<span class="save-filename">${esc(fileHandle.name)}</span>` : "caché del navegador";
+
+      if (mode === "saving") {
+        dot.classList.add("saving");
+        text.innerHTML = `Guardando en ${name}…`;
+      } else if (mode === "saved") {
+        dot.classList.add("saved");
+        text.innerHTML = `Guardado en ${name} · ${formatSaveTime(state.savedAt || new Date().toISOString())}`;
+      } else if (mode === "local") {
+        dot.classList.add("local");
+        text.innerHTML = `Caché local · ${formatSaveTime(state.savedAt || new Date().toISOString())}${extra ? " · " + extra : ""}`;
+      } else if (mode === "error") {
+        dot.classList.add("error");
+        text.textContent = `Error al guardar: ${extra}`;
+      } else if (mode === "loaded") {
+        dot.classList.add("saved");
+        text.innerHTML = `Cargado desde ${name}`;
+      } else {
+        text.textContent = extra || "Sin datos guardados";
+      }
+
+      document.getElementById("disconnectFileBtn").classList.toggle("hidden", !fileHandle);
+      document.getElementById("connectFileBtn").classList.toggle("hidden", !!fileHandle && supportsFileSystem());
+    }
+
+    async function flushSave() {
+      clearTimeout(saveTimer);
+      return performSave();
+    }
+
+    async function performSave() {
+      const payload = buildPayload();
+      payload.savedAt = new Date().toISOString();
+      state.savedAt = payload.savedAt;
+
+      try {
+        localStorage.setItem(STATE_KEY, JSON.stringify(payload));
+        saveUserData();
+      } catch (e) {
+        updateSaveIndicator("error", "caché llena");
+        return;
+      }
+
+      if (!fileHandle) {
+        updateSaveIndicator("local", supportsFileSystem() ? "vincula un JSON para guardar en disco" : "usa Chrome/Edge para guardar en disco");
+        return;
+      }
+
+      try {
+        updateSaveIndicator("saving");
+        await writeFile(fileHandle, payload);
+        updateSaveIndicator("saved");
+      } catch (e) {
+        updateSaveIndicator("error", e.message);
+      }
+    }
+
+    function scheduleSave() {
+      if (!autoSaveEnabled) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(performSave, SAVE_DEBOUNCE_MS);
+    }
+
+    async function connectExistingFile() {
+      if (!supportsFileSystem()) return alert("Tu navegador no soporta guardado en archivo. Usa Chrome o Edge.");
+      [fileHandle] = await window.showOpenFilePicker({
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+        multiple: false,
+      });
+      const data = await readFile(fileHandle);
+      applyPayload(data);
+      await storeFileHandle(fileHandle);
+      updateSaveIndicator("loaded");
+      render();
+      await flushSave();
+    }
+
+    async function createNewFile() {
+      if (!supportsFileSystem()) return alert("Tu navegador no soporta guardado en archivo. Usa Chrome o Edge.");
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: `xmarkers-${state.folder || "datos"}.json`.replace(/\s+/g, "-"),
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+      });
+      await storeFileHandle(fileHandle);
+      await flushSave();
+    }
+
+    async function disconnectFile() {
+      fileHandle = null;
+      await clearStoredFileHandle();
+      updateSaveIndicator("local");
+    }
+
+    async function tryRestoreOnLoad() {
+      if (supportsFileSystem()) {
+        const stored = await loadStoredFileHandle();
+        if (stored) {
+          let perm = await stored.queryPermission({ mode: "readwrite" });
+          if (perm !== "granted") perm = await stored.requestPermission({ mode: "readwrite" });
+          if (perm === "granted") {
+            fileHandle = stored;
+            try {
+              applyPayload(await readFile(fileHandle));
+              updateSaveIndicator("loaded");
+              render();
+              return true;
+            } catch { fileHandle = null; }
+          }
+        }
+      }
+
+      try {
+        const cached = localStorage.getItem(STATE_KEY);
+        if (cached) {
+          applyPayload(JSON.parse(cached));
+          updateSaveIndicator("local", supportsFileSystem() ? "vincula un JSON para guardar en disco" : "");
+          render();
+          return true;
+        }
+      } catch { /* ignore */ }
+
+      updateSaveIndicator("idle", "Importa datos o vincula un archivo JSON");
+      return false;
+    }
+
+    function loadUserData() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+      catch { return {}; }
+    }
+
+    function saveUserData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    }
+
+    function syncUserDataFromBookmark(b) {
+      userData[b.id] = {
+        tags: b.tags || [],
+        notes: b.notes || "",
+        sortOrder: b.sortOrder ?? userData[b.id]?.sortOrder ?? null,
+      };
+    }
+
+    function mergeUserData(bookmarks) {
+      return bookmarks.map((b, i) => {
+        const saved = userData[b.id] || {};
+        const merged = {
+          ...b,
+          source: b.source || "x",
+          tags: (b.tags?.length ? b.tags : saved.tags) || [],
+          notes: b.notes || saved.notes || "",
+          sortOrder: b.sortOrder ?? saved.sortOrder ?? i,
+        };
+        syncUserDataFromBookmark(merged);
+        return merged;
+      });
+    }
+
+    function persistBookmark(bookmark) {
+      syncUserDataFromBookmark(bookmark);
+      scheduleSave();
+    }
+
+    function mergeImport(newData) {
+      const byId = new Map(state.bookmarks.map((b) => [b.id, b]));
+      for (const b of newData.bookmarks) {
+        const merged = mergeUserData([b])[0];
+        if (byId.has(b.id)) {
+          const ex = byId.get(b.id);
+          byId.set(b.id, { ...merged, tags: ex.tags.length ? ex.tags : merged.tags, notes: ex.notes || merged.notes, sortOrder: ex.sortOrder ?? merged.sortOrder });
+        } else {
+          byId.set(b.id, merged);
+        }
+      }
+      state.folder = newData.folder || state.folder;
+      state.parsedAt = newData.parsedAt;
+      state.bookmarks = [...byId.values()];
+      scheduleSave();
+      render();
+    }
+
+    function loadJsonData(data) {
+      applyPayload(data);
+      scheduleSave();
+      render();
+    }
+
+    function allUserTags() {
+      const tags = new Set();
+      state.bookmarks.forEach((b) => b.tags.forEach((t) => tags.add(t)));
+      return [...tags].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function localDateKey(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    function filteredBookmarks() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const tag = document.getElementById("tagFilter").value;
+      const media = document.getElementById("mediaFilter").value;
+      const source = document.getElementById("sourceFilter").value;
+      const dateFilter = document.getElementById("dateFilter").value;
+      const sort = document.getElementById("sortSelect").value;
+
+      let list = [...state.bookmarks];
+
+      if (q) {
+        list = list.filter((b) => {
+          const hay = [b.text, b.displayName, b.handle, b.username, b.url, ...(b.hashtags || []), ...(b.tags || []), b.notes].join(" ").toLowerCase();
+          return hay.includes(q);
+        });
+      }
+      if (tag) list = list.filter((b) => b.tags.includes(tag));
+      if (source) list = list.filter((b) => (b.source || "x") === source);
+      if (media === "text") list = list.filter((b) => !b.media?.type);
+      else if (media) list = list.filter((b) => b.media?.type === media);
+      if (dateFilter) list = list.filter((b) => localDateKey(b.date) === dateFilter);
+
+      document.getElementById("clearDateFilter").classList.toggle("hidden", !dateFilter);
+
+      const cmp = {
+        "date-desc": (a, b) => new Date(b.date || 0) - new Date(a.date || 0),
+        "date-asc": (a, b) => new Date(a.date || 0) - new Date(b.date || 0),
+        "likes-desc": (a, b) => (b.engagement?.likes || 0) - (a.engagement?.likes || 0),
+        "views-desc": (a, b) => (b.engagement?.views || 0) - (a.engagement?.views || 0),
+        "author-asc": (a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username, "es"),
+        custom: (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      }[sort];
+      list.sort(cmp);
+      return list;
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      return new Date(iso).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
+    }
+
+    function authorLink(b) {
+      if (b.source === "x") return `https://x.com/${esc(b.username)}`;
+      return esc(b.url);
+    }
+
+    function youtubeEmbedUrl(url) {
+      if (!url) return null;
+      const m = url.match(/(?:[?&]v=|youtu\.be\/|embed\/)([\w-]{11})/);
+      return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+    }
+
+    function isPlayableVideoUrl(url) {
+      return /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(url) || /video\.twimg\.com/i.test(url);
+    }
+
+    function mediaUrls(b) {
+      return (b.media?.urls || []).filter((u) => u && !u.includes("profile_images") && !u.includes("emoji"));
+    }
+
+    function renderMediaBlock(b) {
+      const media = b.media || {};
+      const urls = mediaUrls(b);
+      const type = media.type;
+
+      const yt = youtubeEmbedUrl(b.url);
+      if (yt || b.source === "youtube") {
+        const embed = yt || youtubeEmbedUrl(b.url);
+        if (embed) {
+          return `<div class="media-wrap"><iframe class="media-embed" src="${esc(embed)}" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+        }
+      }
+
+      if (type === "video" || media.videoUrl) {
+        const videoSrc = media.videoUrl || urls.find(isPlayableVideoUrl);
+        const poster = urls.find((u) => !isPlayableVideoUrl(u)) || urls[0];
+        if (videoSrc) {
+          return `<div class="media-wrap"><video class="media-video" controls playsinline preload="metadata"${poster ? ` poster="${esc(poster)}"` : ""} src="${esc(videoSrc)}"></video></div>`;
+        }
+        if (poster) {
+          return `<div class="media-wrap"><a class="media-play-link" href="${esc(b.url)}" target="_blank" rel="noopener" title="Ver video en X"><img class="media-photo" src="${esc(poster)}" alt="Vista previa del video" loading="lazy"><span class="media-play-btn" aria-hidden="true">▶</span></a></div>`;
+        }
+      }
+
+      if (type === "photo" || (urls.length && type !== "video")) {
+        const cls = urls.length > 1 ? "media-wrap media-gallery" : "media-wrap";
+        return `<div class="${cls}">${urls.map((u) => `<a href="${esc(b.url)}" target="_blank" rel="noopener"><img class="media-photo" src="${esc(u)}" alt="" loading="lazy"></a>`).join("")}</div>`;
+      }
+
+      if (urls.length) {
+        return `<div class="media-wrap"><img class="media-photo" src="${esc(urls[0])}" alt="" loading="lazy"></div>`;
+      }
+
+      return "";
+    }
+
+    function renderStats(list) {
+      const el = document.getElementById("stats");
+      const dateFilter = document.getElementById("dateFilter").value;
+      el.innerHTML = `
+        <span>Carpeta: <strong>${esc(state.folder || "—")}</strong></span>
+        <span>Total: <strong>${state.bookmarks.length}</strong></span>
+        <span>Mostrando: <strong>${list.length}</strong></span>
+        <span>Etiquetas: <strong>${allUserTags().length}</strong></span>
+        ${dateFilter ? `<span>Fecha: <strong>${esc(dateFilter)}</strong></span>` : ""}
+      `;
+    }
+
+    function renderTagFilter() {
+      const sel = document.getElementById("tagFilter");
+      const current = sel.value;
+      sel.innerHTML = '<option value="">Todas las etiquetas</option>';
+      allUserTags().forEach((t) => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        sel.appendChild(opt);
+      });
+      sel.value = current;
+    }
+
+    function renderCard(b, index, list) {
+      const eng = b.engagement || {};
+      const src = b.source || "x";
+      const mediaHtml = renderMediaBlock(b);
+      const tagHtml = [
+        ...(b.hashtags || []).map((t) => `<span class="tag-chip">#${esc(t)}</span>`),
+        ...(b.tags || []).map((t) => `<span class="tag-chip user">${esc(t)} <button type="button" data-remove-tag="${esc(t)}" data-id="${b.id}" aria-label="Quitar">×</button></span>`),
+      ].join("");
+      const checked = selectedIds.has(b.id) ? "checked" : "";
+      const selectedClass = selectedIds.has(b.id) ? "selected" : "";
+
+      return `
+        <article class="card ${selectedClass}" data-id="${b.id}">
+          <div class="card-header">
+            <input type="checkbox" class="card-select" data-select="${b.id}" ${checked} aria-label="Seleccionar">
+            ${b.avatar ? `<img class="avatar" src="${esc(b.avatar)}" alt="" loading="lazy">` : '<div class="avatar"></div>'}
+            <div class="meta">
+              <div class="author-line">
+                <a href="${authorLink(b)}" target="_blank" rel="noopener">${esc(b.displayName || b.username)}</a>
+                ${b.verified ? '<span class="verified" title="Verificado">✓</span>' : ""}
+                <span class="source-badge">${esc(src)}</span>
+                <a class="handle" href="${authorLink(b)}" target="_blank" rel="noopener">${esc(b.handle)}</a>
+                <a class="date-link" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(formatDate(b.date) || b.dateDisplay || "")}</a>
+                ${b.dateInferred ? '<span class="date-inferred" title="Sin fecha en origen">fecha local</span>' : ""}
+              </div>
+              <p class="tweet-text">${esc(b.text)}</p>
+              ${mediaHtml}
+              <div>${tagHtml}</div>
+              <div class="engagement">
+                ${eng.replies != null ? `<span>💬 ${eng.replies.toLocaleString("es")}</span>` : ""}
+                ${eng.reposts != null ? `<span>🔁 ${eng.reposts.toLocaleString("es")}</span>` : ""}
+                ${eng.likes != null ? `<span>❤️ ${eng.likes.toLocaleString("es")}</span>` : ""}
+                ${eng.bookmarks != null ? `<span>🔖 ${eng.bookmarks.toLocaleString("es")}</span>` : ""}
+                ${eng.views != null ? `<span>👁 ${eng.views.toLocaleString("es")}</span>` : ""}
+                ${b.media?.type ? `<span>📎 ${b.media.type}</span>` : ""}
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <input type="text" placeholder="Añadir etiqueta (Enter)" data-tag-input="${b.id}">
+            <button type="button" class="secondary" data-move="up" data-id="${b.id}" ${index === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" class="secondary" data-move="down" data-id="${b.id}" ${index === list.length - 1 ? "disabled" : ""}>↓</button>
+            <a class="btn secondary" href="${esc(b.url)}" target="_blank" rel="noopener" style="text-decoration:none">Abrir enlace</a>
+            <button type="button" class="secondary danger" data-delete="${b.id}">Eliminar</button>
+          </div>
+          <input type="text" value="${esc(b.notes)}" placeholder="Nota personal…" data-notes="${b.id}" style="width:100%;margin-top:0.5rem;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:0.45rem 0.75rem;">
+        </article>
+      `;
+    }
+
+    function updateBulkBar() {
+      const n = selectedIds.size;
+      document.getElementById("bulkBar").classList.toggle("hidden", state.bookmarks.length === 0);
+      document.getElementById("bulkCount").textContent = `${n} seleccionado${n === 1 ? "" : "s"}`;
+      document.getElementById("deleteSelectedBtn").disabled = n === 0;
+    }
+
+    function render() {
+      const hasData = state.bookmarks.length > 0;
+      document.getElementById("toolbar").classList.toggle("hidden", !hasData);
+      document.getElementById("exportJsonBtn").classList.toggle("hidden", !hasData);
+      document.getElementById("clearBtn").classList.toggle("hidden", !hasData);
+      document.getElementById("emptyState").classList.toggle("hidden", hasData);
+
+      renderTagFilter();
+      const list = filteredBookmarks();
+      renderStats(list);
+      updateBulkBar();
+      document.getElementById("list").innerHTML = list.map((b, i) => renderCard(b, i, list)).join("");
+
+      if (tagFocusId) {
+        const input = document.querySelector(`[data-tag-input="${tagFocusId}"]`);
+        if (input) { input.focus(); tagFocusId = null; }
+      }
+    }
+
+    function findBookmark(id) {
+      return state.bookmarks.find((b) => b.id === id);
+    }
+
+    function deleteBookmarks(ids) {
+      const set = new Set(ids);
+      state.bookmarks = state.bookmarks.filter((b) => !set.has(b.id));
+      ids.forEach((id) => { delete userData[id]; selectedIds.delete(id); });
+      scheduleSave();
+      render();
+    }
+
+    function addTag(id, tag) {
+      const t = tag.trim();
+      if (!t) return;
+      const b = findBookmark(id);
+      if (!b || b.tags.includes(t)) { tagFocusId = id; render(); return; }
+      b.tags.push(t);
+      persistBookmark(b);
+      tagFocusId = id;
+      render();
+    }
+
+    function removeTag(id, tag) {
+      const b = findBookmark(id);
+      if (!b) return;
+      b.tags = b.tags.filter((x) => x !== tag);
+      persistBookmark(b);
+      render();
+    }
+
+    function moveBookmark(id, dir) {
+      document.getElementById("sortSelect").value = "custom";
+      const list = filteredBookmarks();
+      const idx = list.findIndex((b) => b.id === id);
+      const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= list.length) return;
+      const orders = state.bookmarks.map((b, i) => ({ id: b.id, order: b.sortOrder ?? i }));
+      const a = orders.find((o) => o.id === list[idx].id);
+      const b = orders.find((o) => o.id === list[swapIdx].id);
+      [a.order, b.order] = [b.order, a.order];
+      state.bookmarks.forEach((bm) => {
+        const o = orders.find((x) => x.id === bm.id);
+        if (o) bm.sortOrder = o.order;
+        persistBookmark(bm);
+      });
+      render();
+    }
+
+    document.getElementById("parseBtn").addEventListener("click", () => {
+      const html = document.getElementById("htmlInput").value.trim();
+      if (!html) return alert("Pega HTML primero.");
+      try {
+        const data = parseHtml(html);
+        if (!data.count) return alert("No se encontraron posts. ¿Es HTML de una carpeta de marcadores?");
+        mergeImport(data);
+        document.getElementById("htmlInput").value = "";
+      } catch (e) {
+        alert("Error al parsear: " + e.message);
+      }
+    });
+
+    document.getElementById("fetchLinkBtn").addEventListener("click", async () => {
+      const input = document.getElementById("linkInput");
+      const raw = input.value.trim();
+      if (!raw) return alert("Pega un enlace primero.");
+      const btn = document.getElementById("fetchLinkBtn");
+      btn.disabled = true;
+      btn.textContent = "Obteniendo…";
+      try {
+        const bookmark = await fetchLinkMetadata(raw);
+        if (state.bookmarks.some((b) => b.id === bookmark.id)) {
+          if (!confirm("Este enlace ya existe. ¿Actualizar datos?")) return;
+          state.bookmarks = state.bookmarks.filter((b) => b.id !== bookmark.id);
+        }
+        const merged = mergeUserData([bookmark])[0];
+        state.bookmarks.unshift(merged);
+        scheduleSave();
+        input.value = "";
+        render();
+      } catch (e) {
+        alert("No se pudo obtener datos del enlace.\n\n" + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Añadir enlace";
+      }
+    });
+
+    document.getElementById("linkInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("fetchLinkBtn").click();
+    });
+
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      mergeImport(parseHtml(await file.text()));
+      e.target.value = "";
+    });
+
+    document.getElementById("jsonInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      loadJsonData(JSON.parse(await file.text()));
+      e.target.value = "";
+    });
+
+    document.getElementById("exportJsonBtn").addEventListener("click", async () => {
+      const payload = { ...buildPayload(), exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `xmarkers-${state.folder || "export"}.json`.replace(/\s+/g, "-");
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    document.getElementById("connectFileBtn").addEventListener("click", () => connectExistingFile().catch((e) => {
+      if (e.name !== "AbortError") alert("No se pudo vincular: " + e.message);
+    }));
+
+    document.getElementById("newFileBtn").addEventListener("click", () => createNewFile().catch((e) => {
+      if (e.name !== "AbortError") alert("No se pudo crear archivo: " + e.message);
+    }));
+
+    document.getElementById("disconnectFileBtn").addEventListener("click", () => disconnectFile());
+
+    document.getElementById("clearBtn").addEventListener("click", async () => {
+      if (!confirm("¿Borrar todos los marcadores y etiquetas guardadas?")) return;
+      state = { folder: "", parsedAt: null, bookmarks: [] };
+      userData = {};
+      selectedIds.clear();
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STATE_KEY);
+      await flushSave();
+      render();
+    });
+
+    document.getElementById("clearDateFilter").addEventListener("click", () => {
+      document.getElementById("dateFilter").value = "";
+      render();
+    });
+
+    document.getElementById("selectAllBtn").addEventListener("click", () => {
+      filteredBookmarks().forEach((b) => selectedIds.add(b.id));
+      render();
+    });
+
+    document.getElementById("deselectAllBtn").addEventListener("click", () => {
+      selectedIds.clear();
+      render();
+    });
+
+    document.getElementById("deleteSelectedBtn").addEventListener("click", () => {
+      const n = selectedIds.size;
+      if (!n || !confirm(`¿Eliminar ${n} post${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}?`)) return;
+      deleteBookmarks([...selectedIds]);
+    });
+
+    ["searchInput", "sortSelect", "tagFilter", "mediaFilter", "sourceFilter", "dateFilter"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", render);
+      document.getElementById(id).addEventListener("change", render);
+    });
+
+    document.getElementById("list").addEventListener("click", (e) => {
+      const sel = e.target.closest("[data-select]");
+      if (sel) {
+        const id = sel.dataset.select;
+        if (sel.checked) selectedIds.add(id); else selectedIds.delete(id);
+        render();
+        return;
+      }
+      const rm = e.target.closest("[data-remove-tag]");
+      if (rm) return removeTag(rm.dataset.id, rm.dataset.removeTag);
+      const move = e.target.closest("[data-move]");
+      if (move) return moveBookmark(move.dataset.id, move.dataset.move);
+      const del = e.target.closest("[data-delete]");
+      if (del && confirm("¿Eliminar este post?")) deleteBookmarks([del.dataset.delete]);
+    });
+
+    document.getElementById("list").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const input = e.target.closest("[data-tag-input]");
+      if (input) {
+        e.preventDefault();
+        addTag(input.dataset.tagInput, input.value);
+        input.value = "";
+      }
+    });
+
+    document.getElementById("list").addEventListener("change", (e) => {
+      const notes = e.target.closest("[data-notes]");
+      if (!notes) return;
+      const b = findBookmark(notes.dataset.notes);
+      if (!b) return;
+      b.notes = notes.value;
+      persistBookmark(b);
+    });
+
+    const dropZone = document.getElementById("dropZone");
+    ["dragenter", "dragover"].forEach((ev) => {
+      dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    });
+    ["dragleave", "drop"].forEach((ev) => {
+      dropZone.addEventListener(ev, () => dropZone.classList.remove("dragover"));
+    });
+    dropZone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      if (file.name.endsWith(".json")) loadJsonData(JSON.parse(await file.text()));
+      else mergeImport(parseHtml(await file.text()));
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushSave();
+    });
+    window.addEventListener("beforeunload", () => { flushSave(); });
+
+    tryRestoreOnLoad().then(() => render());
+  </script>
+</body>
+</html>

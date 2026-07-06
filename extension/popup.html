@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1419;
+      color: #e7e9ea;
+      font-size: 13px;
+    }
+    h1 { margin: 0 0 4px; font-size: 15px; }
+    .sub { color: #71767b; font-size: 11px; margin-bottom: 12px; line-height: 1.4; }
+    .stat {
+      background: #16181c;
+      border: 1px solid #2f3336;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .stat .big { font-size: 28px; font-weight: 700; color: #1d9bf0; }
+    .stat .line { color: #71767b; margin-top: 4px; }
+    .warn {
+      background: rgba(255, 212, 0, 0.1);
+      border: 1px solid rgba(255, 212, 0, 0.35);
+      color: #ffd400;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .row { display: flex; gap: 6px; margin-bottom: 8px; }
+    button, select {
+      flex: 1;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary { background: #1d9bf0; color: #fff; }
+    button.secondary { background: transparent; border: 1px solid #2f3336; color: #e7e9ea; }
+    button.danger { background: #f4212e; color: #fff; }
+    button:disabled { opacity: 0.45; cursor: default; }
+    select {
+      background: #16181c;
+      color: #e7e9ea;
+      border: 1px solid #2f3336;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    .hint { color: #71767b; font-size: 10px; line-height: 1.45; margin-top: 8px; }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ba7c;
+      margin-right: 6px;
+    }
+    .status-dot.paused { background: #71767b; }
+  </style>
+</head>
+<body>
+  <h1>X Markers Collector</h1>
+  <p class="sub">Captura posts mientras haces scroll en una carpeta de marcadores.</p>
+
+  <div id="notBookmark" class="warn" hidden>
+    Abre una carpeta de marcadores en x.com/i/bookmarks y haz scroll para capturar posts.
+  </div>
+
+  <div id="main">
+    <select id="folderSelect"></select>
+    <div class="stat">
+      <div><span id="statusDot" class="status-dot"></span><span id="statusText">Capturando</span></div>
+      <div class="big" id="count">0</div>
+      <div class="line" id="folderLine">—</div>
+      <div class="line" id="estimateLine"></div>
+    </div>
+    <div id="warnIncomplete" class="warn" hidden></div>
+    <div class="row">
+      <button id="toggleBtn" class="secondary">Pausar</button>
+      <button id="scanBtn" class="secondary">Escanear</button>
+    </div>
+    <div class="row">
+      <button id="exportBtn" class="primary">Descargar JSON</button>
+    </div>
+    <div class="row">
+      <button id="clearBtn" class="danger">Limpiar carpeta</button>
+    </div>
+  </div>
+
+  <p class="hint">
+    1. Abre la carpeta en X y baja hasta el final.<br>
+    2. Descarga el JSON aquí.<br>
+    3. En <strong>index.html</strong> → Cargar .json
+  </p>
+
+  <script src="parser.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

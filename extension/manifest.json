@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "X Markers Collector",
+  "version": "1.0.0",
+  "description": "Captura marcadores de X mientras haces scroll y exporta JSON para el organizador.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://twitter.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "X Markers Collector"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": ["parser.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
