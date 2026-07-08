@@ -120,6 +120,58 @@
       line-height: 1;
       cursor: pointer;
     }
+    .tag-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .tag-links-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 0.15rem;
+    }
+    .tag-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(255, 212, 0, 0.12);
+      color: var(--tag);
+      border: 1px solid rgba(255, 212, 0, 0.25);
+      border-radius: 999px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tag-link:hover { background: rgba(255, 212, 0, 0.22); }
+    .tag-link.active {
+      background: rgba(255, 212, 0, 0.32);
+      border-color: var(--tag);
+    }
+    .tag-count {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.68rem;
+    }
+    .tag-link.active .tag-count { color: rgba(255, 212, 0, 0.85); }
+    .tag-links-toggle {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      cursor: pointer;
+      border-radius: 999px;
+    }
+    .tag-links-toggle:hover { text-decoration: underline; background: none; }
     .source-badge {
       display: inline-block;
       font-size: 0.65rem;
@@ -285,6 +337,18 @@
     .save-dot.local { background: #ffd400; }
     @keyframes pulse { 50% { opacity: 0.4; } }
     .save-filename { color: var(--text); font-weight: 600; }
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    .pagination button { min-width: 2.5rem; }
+    .pagination .page-info { min-width: 8rem; text-align: center; }
     @media (max-width: 600px) {
       .card-actions, .link-row { flex-direction: column; align-items: stretch; }
     }
@@ -300,15 +364,9 @@
     <div id="importPanel" class="panel">
       <h2>Importar</h2>
       <div id="dropZone" class="drop-hint">
-        Arrastra un archivo .html o .json aquí, o pega el código fuente abajo
+        Arrastra un archivo .json de la extensión aquí, o cárgalo con el botón
       </div>
-      <textarea id="htmlInput" placeholder="Pega aquí el HTML copiado de Ver código fuente en x.com/i/bookmarks/..."></textarea>
       <div class="row">
-        <button id="parseBtn">Procesar HTML</button>
-        <label class="btn secondary" style="cursor:pointer">
-          Cargar .html
-          <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden>
-        </label>
         <label class="btn secondary" style="cursor:pointer">
           Cargar .json
           <input type="file" id="jsonInput" accept=".json,application/json" hidden>
@@ -329,7 +387,7 @@
         <button id="newFileBtn" class="secondary" type="button">Crear JSON</button>
         <button id="disconnectFileBtn" class="secondary hidden" type="button">Desvincular</button>
       </div>
-      <p class="hint">Auto-guardado: cada cambio se escribe en tu archivo JSON (si está vinculado) y en caché del navegador. Funciona en Chrome/Edge.</p>
+      <p class="hint">Usa la extensión X Markers Collector para capturar posts en x.com, descarga el JSON y cárgalo aquí. Auto-guardado en archivo vinculado y caché del navegador (Chrome/Edge).</p>
     </div>
 
     <div id="toolbar" class="panel hidden">
@@ -364,18 +422,23 @@
           <option value="web">Web</option>
         </select>
       </div>
+      <div id="tagLinks" class="tag-links hidden"></div>
       <div id="bulkBar" class="bulk-bar hidden">
         <span id="bulkCount">0 seleccionados</span>
         <button id="selectAllBtn" class="secondary" type="button">Seleccionar visibles</button>
         <button id="deselectAllBtn" class="secondary" type="button">Deseleccionar</button>
         <button id="deleteSelectedBtn" class="danger" type="button">Eliminar seleccionados</button>
       </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button id="exportLinksBtn" class="secondary" type="button">Exportar links filtrados</button>
+      </div>
       <div class="stats" id="stats"></div>
     </div>
 
     <div id="list"></div>
+    <div id="pagination" class="pagination hidden"></div>
     <div id="emptyState" class="empty">
-      Aún no hay marcadores. Importa HTML, JSON o añade un enlace manualmente.
+      Aún no hay marcadores. Carga un JSON de la extensión o añade un enlace manualmente.
     </div>
   </main>
 
@@ -386,129 +449,11 @@
     const IDB_STORE = "handles";
     const IDB_KEY = "data-file";
     const SAVE_DEBOUNCE_MS = 600;
-
-    /* ── HTML parser (X bookmarks) ── */
-    function parseEngagement(ariaLabel) {
-      if (!ariaLabel) return {};
-      const out = {};
-      const patterns = [
-        [/(\d[\d.,]*)\s+respuestas?/i, "replies"],
-        [/(\d[\d.,]*)\s+reposts?/i, "reposts"],
-        [/(\d[\d.,]*)\s+Me gusta/i, "likes"],
-        [/(\d[\d.,]*)\s+elementos guardados/i, "bookmarks"],
-        [/(\d[\d.,]*)\s+reproducciones/i, "views"],
-      ];
-      for (const [re, key] of patterns) {
-        const m = ariaLabel.match(re);
-        if (m) out[key] = parseInt(m[1].replace(/[.,]/g, ""), 10);
-      }
-      return out;
-    }
-
-    function textFromTweet(article) {
-      const node = article.querySelector('[data-testid="tweetText"]');
-      if (!node) return "";
-      let text = "";
-      const walk = (el) => {
-        for (const child of el.childNodes) {
-          if (child.nodeType === Node.TEXT_NODE) text += child.textContent;
-          else if (child.nodeName === "IMG" && child.alt) text += child.alt;
-          else if (child.nodeType === Node.ELEMENT_NODE) walk(child);
-        }
-      };
-      walk(node);
-      return text.replace(/\s+/g, " ").trim();
-    }
-
-    function hashtagsFromTweet(article) {
-      const tags = [];
-      article.querySelectorAll('[data-testid="tweetText"] a[href*="/hashtag/"]').forEach((a) => {
-        const m = a.getAttribute("href")?.match(/\/hashtag\/([^?]+)/);
-        if (m) tags.push(decodeURIComponent(m[1]));
-      });
-      return tags;
-    }
-
-    function mediaFromTweet(article) {
-      const media = { type: null, urls: [], videoUrl: null };
-      if (article.querySelector('[data-testid="videoPlayer"], [data-testid="videoComponent"]')) media.type = "video";
-      else if (article.querySelector('[data-testid="tweetPhoto"]')) media.type = "photo";
-      else if (article.querySelector('[data-testid="card.wrapper"]')) media.type = "link";
-
-      const videoEl = article.querySelector("video");
-      if (videoEl) {
-        const src = videoEl.getAttribute("src") || videoEl.querySelector("source[src]")?.getAttribute("src");
-        if (src && !src.startsWith("blob:")) media.videoUrl = src;
-        const poster = videoEl.getAttribute("poster");
-        if (poster && !media.urls.includes(poster)) media.urls.push(poster);
-      }
-
-      article.querySelectorAll("img[src]").forEach((img) => {
-        const src = img.src;
-        if (src.includes("profile_images") || src.includes("emoji")) return;
-        if (src.startsWith("https://") && !media.urls.includes(src)) media.urls.push(src);
-      });
-      return media;
-    }
-
-    function parseTweet(article) {
-      const status = article.querySelector('a[href*="/status/"]');
-      if (!status) return null;
-      const m = status.getAttribute("href")?.match(/\/([^/]+)\/status\/(\d+)/);
-      if (!m) return null;
-      const [, username, tweetId] = m;
-      const timeEl = article.querySelector("time[datetime]");
-      let displayName = "";
-      let handle = "";
-      const nameBlock = article.querySelector('[data-testid="User-Name"]');
-      if (nameBlock) {
-        const texts = [...nameBlock.querySelectorAll("span.css-1jxf684")]
-          .map((s) => s.textContent.replace(/\s+/g, " ").trim())
-          .filter(Boolean);
-        for (const t of texts) {
-          if (t.startsWith("@")) handle = t;
-          else if (!displayName && t !== "·") displayName = t;
-        }
-      }
-      if (!handle) handle = `@${username}`;
-      const avatarEl = article.querySelector('[data-testid="Tweet-User-Avatar"] img[src*="profile_images"]');
-      const engagementEl = article.querySelector('[role="group"][aria-label*="Me gusta"], [role="group"][aria-label*="respuestas"]');
-      return {
-        id: tweetId,
-        url: `https://x.com/${username}/status/${tweetId}`,
-        source: "x",
-        username,
-        handle,
-        displayName,
-        avatar: avatarEl?.src || "",
-        verified: !!article.querySelector('[data-testid="icon-verified"]'),
-        date: timeEl?.getAttribute("datetime") || null,
-        dateDisplay: timeEl?.textContent?.trim() || null,
-        dateInferred: false,
-        text: textFromTweet(article),
-        hashtags: hashtagsFromTweet(article),
-        engagement: parseEngagement(engagementEl?.getAttribute("aria-label")),
-        liked: !!article.querySelector('[data-testid="unlike"]'),
-        media: mediaFromTweet(article),
-        tags: [],
-        notes: "",
-        sortOrder: null,
-      };
-    }
-
-    function parseHtml(html) {
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      let folder = "";
-      const timeline = doc.querySelector('[aria-label^="Cronología:"]');
-      if (timeline) folder = timeline.getAttribute("aria-label").replace("Cronología:", "").trim();
-      const tweets = [];
-      const seen = new Set();
-      doc.querySelectorAll('article[data-testid="tweet"]').forEach((article) => {
-        const tweet = parseTweet(article);
-        if (tweet && !seen.has(tweet.id)) { seen.add(tweet.id); tweets.push(tweet); }
-      });
-      return { folder, parsedAt: new Date().toISOString(), count: tweets.length, bookmarks: tweets };
-    }
+    const PAGE_SIZE_OPTIONS = [25, 50, 100];
+    const TAG_LINKS_LIMIT = 8;
+    let currentPage = 1;
+    let pageSize = 50;
+    let tagLinksExpanded = false;
 
     /* ── Link fetcher ── */
     function hashStr(s) {
@@ -1017,33 +962,53 @@
     }
 
     function mergeImport(newData) {
+      if (!newData?.bookmarks?.length) return;
+      state.bookmarks.forEach(syncUserDataFromBookmark);
       const byId = new Map(state.bookmarks.map((b) => [b.id, b]));
       for (const b of newData.bookmarks) {
         const merged = mergeUserData([b])[0];
         if (byId.has(b.id)) {
           const ex = byId.get(b.id);
-          byId.set(b.id, { ...merged, tags: ex.tags.length ? ex.tags : merged.tags, notes: ex.notes || merged.notes, sortOrder: ex.sortOrder ?? merged.sortOrder });
+          const saved = userData[b.id] || {};
+          byId.set(b.id, {
+            ...merged,
+            tags: ex.tags?.length ? ex.tags : saved.tags?.length ? saved.tags : merged.tags,
+            notes: ex.notes || saved.notes || merged.notes,
+            sortOrder: ex.sortOrder ?? saved.sortOrder ?? merged.sortOrder,
+          });
         } else {
           byId.set(b.id, merged);
         }
       }
       state.folder = newData.folder || state.folder;
-      state.parsedAt = newData.parsedAt;
+      state.parsedAt = newData.parsedAt || state.parsedAt;
       state.bookmarks = [...byId.values()];
+      state.bookmarks.forEach(syncUserDataFromBookmark);
       scheduleSave();
       render();
     }
 
     function loadJsonData(data) {
+      if (!data) return;
+      if (state.bookmarks.length > 0) {
+        mergeImport(data);
+        return;
+      }
       applyPayload(data);
       scheduleSave();
       render();
     }
 
+    function tagsByCount() {
+      const counts = new Map();
+      state.bookmarks.forEach((b) => b.tags.forEach((t) => counts.set(t, (counts.get(t) || 0) + 1)));
+      return [...counts.entries()]
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "es"));
+    }
+
     function allUserTags() {
-      const tags = new Set();
-      state.bookmarks.forEach((b) => b.tags.forEach((t) => tags.add(t)));
-      return [...tags].sort((a, b) => a.localeCompare(b, "es"));
+      return tagsByCount().map((t) => t.tag);
     }
 
     function localDateKey(iso) {
@@ -1153,29 +1118,114 @@
       return "";
     }
 
-    function renderStats(list) {
+    function renderStats(list, pageInfo) {
       const el = document.getElementById("stats");
       const dateFilter = document.getElementById("dateFilter").value;
+      const { start, end, totalPages } = pageInfo;
       el.innerHTML = `
         <span>Carpeta: <strong>${esc(state.folder || "—")}</strong></span>
         <span>Total: <strong>${state.bookmarks.length}</strong></span>
-        <span>Mostrando: <strong>${list.length}</strong></span>
+        <span>Filtrados: <strong>${list.length}</strong></span>
         <span>Etiquetas: <strong>${allUserTags().length}</strong></span>
+        ${list.length > pageSize ? `<span>Página: <strong>${currentPage}</strong> / ${totalPages} · ${start + 1}–${end}</span>` : ""}
         ${dateFilter ? `<span>Fecha: <strong>${esc(dateFilter)}</strong></span>` : ""}
       `;
+    }
+
+    function getPageInfo(total) {
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * pageSize;
+      const end = Math.min(start + pageSize, total);
+      return { start, end, totalPages };
+    }
+
+    function renderPagination(total) {
+      const el = document.getElementById("pagination");
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const show = total > pageSize;
+      el.classList.toggle("hidden", !show);
+      if (!show) return;
+
+      const sizeOptions = PAGE_SIZE_OPTIONS.map((n) =>
+        `<option value="${n}"${n === pageSize ? " selected" : ""}>${n} / pág.</option>`
+      ).join("");
+
+      el.innerHTML = `
+        <button type="button" class="secondary" id="pageFirst" ${currentPage <= 1 ? "disabled" : ""}>«</button>
+        <button type="button" class="secondary" id="pagePrev" ${currentPage <= 1 ? "disabled" : ""}>‹</button>
+        <span class="page-info">Página ${currentPage} de ${totalPages}</span>
+        <button type="button" class="secondary" id="pageNext" ${currentPage >= totalPages ? "disabled" : ""}>›</button>
+        <button type="button" class="secondary" id="pageLast" ${currentPage >= totalPages ? "disabled" : ""}>»</button>
+        <select id="pageSizeSelect" class="secondary" style="border-radius:999px;padding:0.5rem 0.75rem;background:var(--bg);color:var(--text);border:1px solid var(--border)">${sizeOptions}</select>
+      `;
+    }
+
+    function downloadFile(content, filename, mime) {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportFilteredLinks() {
+      const list = filteredBookmarks();
+      if (!list.length) return alert("No hay posts en el filtro actual.");
+      const urls = list.map((b) => b.url).filter(Boolean);
+      const suffix = (state.folder || "links").replace(/\s+/g, "-");
+      downloadFile(urls.join("\n") + "\n", `xmarkers-links-${suffix}.txt`, "text/plain;charset=utf-8");
     }
 
     function renderTagFilter() {
       const sel = document.getElementById("tagFilter");
       const current = sel.value;
       sel.innerHTML = '<option value="">Todas las etiquetas</option>';
-      allUserTags().forEach((t) => {
+      tagsByCount().forEach(({ tag, count }) => {
         const opt = document.createElement("option");
-        opt.value = t;
-        opt.textContent = t;
+        opt.value = tag;
+        opt.textContent = `${tag} (${count})`;
         sel.appendChild(opt);
       });
       sel.value = current;
+    }
+
+    function visibleTagLinks(tags, active) {
+      if (tagLinksExpanded) return tags;
+      const top = tags.slice(0, TAG_LINKS_LIMIT);
+      if (!active || top.some((t) => t.tag === active)) return top;
+      const activeEntry = tags.find((t) => t.tag === active);
+      return activeEntry ? [...top, activeEntry] : top;
+    }
+
+    function renderTagLinks() {
+      const el = document.getElementById("tagLinks");
+      const tags = tagsByCount();
+      const active = document.getElementById("tagFilter").value;
+
+      if (!tags.length) {
+        el.classList.add("hidden");
+        el.innerHTML = "";
+        return;
+      }
+      el.classList.remove("hidden");
+
+      const visible = visibleTagLinks(tags, active);
+      const hiddenCount = tags.length - TAG_LINKS_LIMIT;
+      const toggleBtn = hiddenCount > 0
+        ? tagLinksExpanded
+          ? `<button type="button" class="tag-links-toggle" id="tagLinksToggle">Ver menos</button>`
+          : `<button type="button" class="tag-links-toggle" id="tagLinksToggle">Ver más (+${hiddenCount})</button>`
+        : "";
+
+      el.innerHTML = `
+        <span class="tag-links-label">Etiquetas</span>
+        ${visible.map(({ tag, count }) =>
+          `<button type="button" class="tag-link${active === tag ? " active" : ""}" data-tag-link="${esc(tag)}">${esc(tag)} <span class="tag-count">${count}</span></button>`
+        ).join("")}
+        ${toggleBtn}
+      `;
     }
 
     function renderCard(b, index, list) {
@@ -1235,18 +1285,24 @@
       document.getElementById("deleteSelectedBtn").disabled = n === 0;
     }
 
-    function render() {
+    function render(resetPage = false) {
+      if (resetPage) currentPage = 1;
       const hasData = state.bookmarks.length > 0;
       document.getElementById("toolbar").classList.toggle("hidden", !hasData);
       document.getElementById("exportJsonBtn").classList.toggle("hidden", !hasData);
+      document.getElementById("exportLinksBtn").classList.toggle("hidden", !hasData);
       document.getElementById("clearBtn").classList.toggle("hidden", !hasData);
       document.getElementById("emptyState").classList.toggle("hidden", hasData);
 
       renderTagFilter();
+      renderTagLinks();
       const list = filteredBookmarks();
-      renderStats(list);
+      const pageInfo = getPageInfo(list.length);
+      const pageList = list.slice(pageInfo.start, pageInfo.end);
+      renderStats(list, pageInfo);
       updateBulkBar();
-      document.getElementById("list").innerHTML = list.map((b, i) => renderCard(b, i, list)).join("");
+      document.getElementById("list").innerHTML = pageList.map((b, i) => renderCard(b, pageInfo.start + i, list)).join("");
+      renderPagination(list.length);
 
       if (tagFocusId) {
         const input = document.querySelector(`[data-tag-input="${tagFocusId}"]`);
@@ -1303,18 +1359,7 @@
       render();
     }
 
-    document.getElementById("parseBtn").addEventListener("click", () => {
-      const html = document.getElementById("htmlInput").value.trim();
-      if (!html) return alert("Pega HTML primero.");
-      try {
-        const data = parseHtml(html);
-        if (!data.count) return alert("No se encontraron posts. ¿Es HTML de una carpeta de marcadores?");
-        mergeImport(data);
-        document.getElementById("htmlInput").value = "";
-      } catch (e) {
-        alert("Error al parsear: " + e.message);
-      }
-    });
+    document.getElementById("exportLinksBtn").addEventListener("click", exportFilteredLinks);
 
     document.getElementById("fetchLinkBtn").addEventListener("click", async () => {
       const input = document.getElementById("linkInput");
@@ -1346,17 +1391,14 @@
       if (e.key === "Enter") document.getElementById("fetchLinkBtn").click();
     });
 
-    document.getElementById("fileInput").addEventListener("change", async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      mergeImport(parseHtml(await file.text()));
-      e.target.value = "";
-    });
-
     document.getElementById("jsonInput").addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      loadJsonData(JSON.parse(await file.text()));
+      try {
+        loadJsonData(JSON.parse(await file.text()));
+      } catch {
+        alert("El archivo no es un JSON válido.");
+      }
       e.target.value = "";
     });
 
@@ -1393,11 +1435,13 @@
 
     document.getElementById("clearDateFilter").addEventListener("click", () => {
       document.getElementById("dateFilter").value = "";
-      render();
+      render(true);
     });
 
     document.getElementById("selectAllBtn").addEventListener("click", () => {
-      filteredBookmarks().forEach((b) => selectedIds.add(b.id));
+      const list = filteredBookmarks();
+      const { start, end } = getPageInfo(list.length);
+      list.slice(start, end).forEach((b) => selectedIds.add(b.id));
       render();
     });
 
@@ -1412,9 +1456,42 @@
       deleteBookmarks([...selectedIds]);
     });
 
+    document.getElementById("toolbar").addEventListener("click", (e) => {
+      if (e.target.id === "tagLinksToggle") {
+        tagLinksExpanded = !tagLinksExpanded;
+        renderTagLinks();
+        return;
+      }
+      const btn = e.target.closest("[data-tag-link]");
+      if (!btn) return;
+      const tag = btn.dataset.tagLink;
+      const sel = document.getElementById("tagFilter");
+      sel.value = sel.value === tag ? "" : tag;
+      render(true);
+    });
+
     ["searchInput", "sortSelect", "tagFilter", "mediaFilter", "sourceFilter", "dateFilter"].forEach((id) => {
-      document.getElementById(id).addEventListener("input", render);
-      document.getElementById(id).addEventListener("change", render);
+      document.getElementById(id).addEventListener("input", () => render(true));
+      document.getElementById(id).addEventListener("change", () => render(true));
+    });
+
+    document.getElementById("pagination").addEventListener("click", (e) => {
+      const list = filteredBookmarks();
+      const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+      if (e.target.id === "pageFirst") currentPage = 1;
+      else if (e.target.id === "pagePrev") currentPage = Math.max(1, currentPage - 1);
+      else if (e.target.id === "pageNext") currentPage = Math.min(totalPages, currentPage + 1);
+      else if (e.target.id === "pageLast") currentPage = totalPages;
+      else return;
+      render();
+      document.getElementById("list").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("pagination").addEventListener("change", (e) => {
+      if (e.target.id !== "pageSizeSelect") return;
+      pageSize = parseInt(e.target.value, 10) || 50;
+      currentPage = 1;
+      render();
     });
 
     document.getElementById("list").addEventListener("click", (e) => {
@@ -1463,8 +1540,12 @@
       e.preventDefault();
       const file = e.dataTransfer.files?.[0];
       if (!file) return;
-      if (file.name.endsWith(".json")) loadJsonData(JSON.parse(await file.text()));
-      else mergeImport(parseHtml(await file.text()));
+      if (!file.name.endsWith(".json")) return alert("Solo se aceptan archivos .json de la extensión.");
+      try {
+        loadJsonData(JSON.parse(await file.text()));
+      } catch {
+        alert("El archivo no es un JSON válido.");
+      }
     });
 
     document.addEventListener("visibilitychange", () => {

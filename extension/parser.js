@@ -1,4 +1,4 @@
-/** Parser compartido — mismo formato que index.html / parse.py */
+/** Parser compartido — mismo formato que index.html */
 const XMarkersParser = (() => {
   function parseEngagement(ariaLabel) {
     if (!ariaLabel) return {};
