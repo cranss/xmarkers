@@ -349,6 +349,75 @@
     }
     .pagination button { min-width: 2.5rem; }
     .pagination .page-info { min-width: 8rem; text-align: center; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+    }
+    .modal-box {
+      position: relative;
+      width: min(560px, 100%);
+      max-height: min(80vh, 640px);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.25rem 0.45rem;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--border); }
+    .modal-box textarea {
+      flex: 1;
+      min-height: 240px;
+      max-height: 50vh;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      resize: vertical;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .modal-count { color: var(--muted); font-size: 0.85rem; }
     @media (max-width: 600px) {
       .card-actions, .link-row { flex-direction: column; align-items: stretch; }
     }
@@ -441,6 +510,21 @@
       Aún no hay marcadores. Carga un JSON de la extensión o añade un enlace manualmente.
     </div>
   </main>
+
+  <div id="linksModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="linksModalTitle">
+    <div class="modal-backdrop" id="linksModalBackdrop"></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="linksModalTitle">Links filtrados</h3>
+        <button type="button" class="modal-close" id="linksModalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <textarea id="linksModalText" readonly spellcheck="false"></textarea>
+      <div class="modal-footer">
+        <span id="linksModalCount" class="modal-count"></span>
+        <button type="button" id="linksModalCopy">Copiar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const STORAGE_KEY = "xmarkers-user-data-v1";
@@ -1161,21 +1245,37 @@
       `;
     }
 
-    function downloadFile(content, filename, mime) {
-      const blob = new Blob([content], { type: mime });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
+    function showLinksModal(text, count) {
+      document.getElementById("linksModalText").value = text;
+      document.getElementById("linksModalCount").textContent = `${count} link${count === 1 ? "" : "s"}`;
+      document.getElementById("linksModalCopy").textContent = "Copiar";
+      document.getElementById("linksModal").classList.remove("hidden");
+    }
+
+    function hideLinksModal() {
+      document.getElementById("linksModal").classList.add("hidden");
+    }
+
+    async function copyLinksModalText() {
+      const text = document.getElementById("linksModalText").value;
+      const btn = document.getElementById("linksModalCopy");
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.getElementById("linksModalText");
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+      }
+      btn.textContent = "¡Copiado!";
+      setTimeout(() => { btn.textContent = "Copiar"; }, 2000);
     }
 
     function exportFilteredLinks() {
       const list = filteredBookmarks();
       if (!list.length) return alert("No hay posts en el filtro actual.");
       const urls = list.map((b) => b.url).filter(Boolean);
-      const suffix = (state.folder || "links").replace(/\s+/g, "-");
-      downloadFile(urls.join("\n") + "\n", `xmarkers-links-${suffix}.txt`, "text/plain;charset=utf-8");
+      showLinksModal(urls.join("\n"), urls.length);
     }
 
     function renderTagFilter() {
@@ -1360,6 +1460,12 @@
     }
 
     document.getElementById("exportLinksBtn").addEventListener("click", exportFilteredLinks);
+    document.getElementById("linksModalCopy").addEventListener("click", copyLinksModalText);
+    document.getElementById("linksModalClose").addEventListener("click", hideLinksModal);
+    document.getElementById("linksModalBackdrop").addEventListener("click", hideLinksModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !document.getElementById("linksModal").classList.contains("hidden")) hideLinksModal();
+    });
 
     document.getElementById("fetchLinkBtn").addEventListener("click", async () => {
       const input = document.getElementById("linkInput");
